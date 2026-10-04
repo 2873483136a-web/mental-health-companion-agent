@@ -1,8 +1,6 @@
 # 心理陪伴智能体「小屿」 (Mental-Health Companion Agent)
 
-> 四川大学未来技术创新创业社团考核 · 考题二「对话系统：做一个循循善诱的心理陪伴智能体」· **技术向**
->
-> 基于 **DeepSeek + LangGraph** 实现的、面向学生的心理陪伴对话智能体。它能在遵循心理沟通策略与安全规则的前提下，理解情绪、按场景选择沟通策略、循循善诱地促进用户表达，并在识别到心理危机时进入危机干预路径、转介专业资源。
+>基于 **DeepSeek + LangGraph** 实现的、面向学生的心理陪伴对话智能体。它能在遵循心理沟通策略与安全规则的前提下，理解情绪、按场景选择沟通策略、循循善诱地促进用户表达，并在识别到心理危机时进入危机干预路径、转介专业资源。
 
 ---
 
@@ -94,10 +92,12 @@ mental-health-companion-agent/
 
 ## 8. 常见问题
 
-**`CERTIFICATE_VERIFY_FAILED: unable to get local issuer certificate`**
-macOS 的 Python 找不到 CA 证书。本项目已默认用 `certifi` 修复。若你在**会做 TLS 拦截的公司代理网络**下仍报错，在 `.env` 里二选一：
+### SSL / 证书相关报错
+#### 报错1：`CERTIFICATE_VERIFY_FAILED: unable to get local issuer certificate`
+macOS Python 缺少根证书；Windows 在公司代理、TLS拦截环境下也会出现该证书错误。
+本项目可借助 `certifi` 处理证书。当你在**会做 TLS 拦截的公司代理网络**下仍报错，在 `.env` 二选一：
 ```bash
-DEEPSEEK_CA_BUNDLE=/绝对路径/公司根证书.pem   # 推荐：指定公司根证书
-# 或（仅本地调试，不安全）
+DEEPSEEK_CA_BUNDLE=/绝对路径/根证书.pem   # 推荐：指定代理根证书
+# 或（仅本地调试，不安全，不要生产使用）
 DEEPSEEK_VERIFY_SSL=false
-```
+
