@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>心理陪伴智能体「小屿」</title>
+<style>
+  :root {
+    --bg: #f4f7f6; --panel: #ffffff; --ink: #24303a; --muted: #7c8a97;
+    --brand: #2f9e8f; --brand-soft: #e6f4f1; --ink: #24303a; --line: #e7ecef;
+    --user-bubble: #2f9e8f; --bot-bubble: #ffffff;
+    --none: #3a9d5d; --low: #d9a536; --medium: #e07b39; --high: #d64545;
+    --crisis-bg: #fff4f2; --crisis-line: #f0c4bd;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: var(--bg); color: var(--ink); height: 100vh; overflow: hidden;
+  }
+  .app { display: grid; grid-template-columns: 1fr 340px; height: 100vh; }
+  @media (max-width: 860px){ .app{ grid-template-columns: 1fr; } .side{ display:none; } }
+
+  /* ---- 左侧对话 ---- */
+  .chat { display: flex; flex-direction: column; height: 100vh; }
+  .head {
+    display: flex; align-items: center; gap: 12px; padding: 14px 22px;
+    background: var(--panel); border-bottom: 1px solid var(--line);
+  }
+  .avatar {
+    width: 40px; height: 40px; border-radius: 50%; background: var(--brand);
+    color:#fff; display:flex; align-items:center; justify-content:center;
+    font-size: 20px; flex: none;
+  }
+  .head h1 { font-size: 16px; margin: 0; }
+  .head p { font-size: 12px; color: var(--muted); margin: 2px 0 0; }
+  .head .spacer { flex: 1; }
+  .btn {
+    border: 1px solid var(--line); background:#fff; color: var(--ink);
+    padding: 6px 12px; border-radius: 8px; cursor: pointer; font-size: 13px;
+  }
+  .btn:hover { background: var(--brand-soft); border-color: var(--brand); }
+
+  .msgs { flex: 1; overflow-y: auto; padding: 22px; }
+  .row { display: flex; margin-bottom: 16px; }
+  .row.user { justify-content: flex-end; }
+  .bubble {
+    max-width: 76%; padding: 11px 15px; border-radius: 14px; line-height: 1.6;
+    font-size: 15px; white-space: pre-wrap; word-break: break-word;
+    box-shadow: 0 1px 2px rgba(0,0,0,.04);
+  }
+  .row.bot .bubble { background: var(--bot-bubble); border: 1px solid var(--line); border-top-left-radius: 4px; }
+  .row.user .bubble { background: var(--user-bubble); color:#fff; border-top-right-radius: 4px; }
+  .row.bot.crisis .bubble { background: var(--crisis-bg); border-color: var(--crisis-line); }
+  .tag {
+    display:inline-block; margin-top: 8px; font-size: 11px; color: var(--muted);
+    border-top: 1px dashed var(--line); padding-top: 6px;
+  }
+  .tag b { color: var(--brand); font-weight: 600; }
+  .crisis-flag { color: var(--high); font-weight: 700; }
+
+  .typing .bubble { color: var(--muted); }
+  .dots span { animation: blink 1.2s infinite; }
+  .dots span:nth-child(2){ animation-delay:.2s } .dots span:nth-child(3){ animation-delay:.4s }
+  @keyframes blink { 0%,60%,100%{opacity:.2} 30%{opacity:1} }
+
+  /* ---- 输入区 ---- */
+  .input { display: flex; gap: 10px; padding: 14px 22px; background: var(--panel); border-top: 1px solid var(--line); }
+  .input textarea {
+    flex: 1; resize: none; border: 1px solid var(--line); border-radius: 10px;
+    padding: 11px 14px; font-size: 15px; font-family: inherit; height: 46px; max-height: 120px;
+  }
+  .input textarea:focus { outline: none; border-color: var(--brand); }
+  .send { background: var(--brand); color:#fff; border:none; border-radius: 10px; padding: 0 20px; cursor: pointer; font-size: 15px; }
+  .send:disabled { opacity: .5; cursor: not-allowed; }
+
+  /* ---- 右侧分析面板 ---- */
+  .side { background: var(--panel); border-left: 1px solid var(--line); padding: 20px; overflow-y: auto; }
+  .side h2 { font-size: 13px; color: var(--muted); text-transform: uppercase; letter-spacing:.5px; margin: 0 0 12px; }
+  .card { border: 1px solid var(--line); border-radius: 12px; padding: 14px; margin-bottom: 16px; }
+  .field { margin-bottom: 12px; }
+  .field:last-child { margin-bottom: 0; }
+  .label { font-size: 12px; color: var(--muted); margin-bottom: 4px; }
+  .badge { display:inline-block; padding: 3px 10px; border-radius: 20px; font-size: 13px; color:#fff; font-weight:600; }
+  .value { font-size: 14px; font-weight: 600; }
+  .reason { font-size: 12px; color: var(--muted); line-height:1.5; margin-top:4px; }
+  .bars { display:flex; gap:4px; margin-top:4px; }
+  .bars i { width: 18px; height: 8px; border-radius: 2px; background: var(--line); }
+  .bars i.on { background: var(--brand); }
+  .legend { font-size: 12px; color: var(--muted); line-height: 1.7; }
+  .legend b { color: var(--ink); }
+  .empty { color: var(--muted); font-size: 13px; line-height:1.6; }
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- 对话 -->
+  <section class="chat">
+    <div class="head">
+      <div class="avatar">屿</div>
+      <div>
+        <h1>小屿 · 心理陪伴智能体</h1>
+        <p>DeepSeek + LangGraph　|　温和倾听，安全陪伴</p>
+      </div>
+      <div class="spacer"></div>
+      <button class="btn" onclick="resetSession()">＋ 新会话</button>
+    </div>
+
+    <div class="msgs" id="msgs"></div>
+
+    <div class="input">
+      <textarea id="text" placeholder="和小屿说点什么…（Enter 发送，Shift+Enter 换行）"></textarea>
+      <button class="send" id="send" onclick="send()">发送</button>
+    </div>
+  </section>
+
+  <!-- 分析面板 -->
+  <aside class="side">
+    <h2>本轮对话分析</h2>
+    <div class="card" id="analysis">
+      <div class="empty">发送一条消息后，这里会实时显示小屿的<b>风险评估、情绪识别与所选沟通策略</b>。</div>
+    </div>
+
+    <h2>沟通策略图例</h2>
+    <div class="card"><div class="legend" id="legend">加载中…</div></div>
+
+    <h2>安全说明</h2>
+    <div class="card">
+      <div class="legend">小屿不做诊断、不荐药、不替代专业咨询。识别到危机时会转介 24 小时热线。<br><br>
+      如你或身边的人正处于危机，请拨打 <b>400-161-9995</b> 或 <b>120</b>。</div>
+    </div>
+  </aside>
+</div>
+
+<script>
+const RISK = {
+  none:   {c:"var(--none)",   t:"无风险"},
+  low:    {c:"var(--low)",    t:"低风险"},
+  medium: {c:"var(--medium)", t:"中风险"},
+  high:   {c:"var(--high)",   t:"高风险"},
+};
+let threadId = "";
+
+const el = id => document.getElementById(id);
+const msgs = el("msgs");
+
+function addBubble(text, who, rec){
+  const row = document.createElement("div");
+  row.className = "row " + who + (rec && rec.route === "crisis" ? " crisis" : "");
+  const b = document.createElement("div");
+  b.className = "bubble";
+  b.textContent = text;
+  if (rec && who === "bot"){
+    const tag = document.createElement("div");
+    tag.className = "tag";
+    const crisis = rec.route === "crisis"
+      ? `<span class="crisis-flag">⚠ 危机干预路径</span>　` : "";
+    tag.innerHTML = crisis + `策略：<b>${rec.strategy_name||"-"}</b>　情绪：${rec.emotion||"-"}`;
+    b.appendChild(tag);
+  }
+  row.appendChild(b);
+  msgs.appendChild(row);
+  msgs.scrollTop = msgs.scrollHeight;
+  return row;
+}
+
+function showTyping(){
+  const row = document.createElement("div");
+  row.className = "row bot typing"; row.id = "typing";
+  row.innerHTML = `<div class="bubble">小屿正在认真听<span class="dots"><span>.</span><span>.</span><span>.</span></span></div>`;
+  msgs.appendChild(row); msgs.scrollTop = msgs.scrollHeight;
+}
+function hideTyping(){ const t = el("typing"); if (t) t.remove(); }
+
+function renderAnalysis(r){
+  const risk = RISK[r.risk_level] || RISK.low;
+  const dots = n => Array.from({length:5}, (_,i)=>`<i class="${i<n?'on':''}"></i>`).join("");
+  el("analysis").innerHTML = `
+    <div class="field">
+      <div class="label">风险评估　（路径：${r.route==='crisis'?'危机干预':'普通陪伴'}）</div>
+      <span class="badge" style="background:${risk.c}">${risk.t}</span>
+      ${r.risk_reason?`<div class="reason">${r.risk_reason}</div>`:""}
+    </div>
+    <div class="field">
+      <div class="label">情绪识别</div>
+      <div class="value">${r.emotion||"-"}</div>
+      <div class="bars">${dots(r.intensity||0)}</div>
+    </div>
+    <div class="field">
+      <div class="label">所选沟通策略</div>
+      <div class="value">${r.strategy_name||"-"}</div>
+      ${r.strategy_reason?`<div class="reason">${r.strategy_reason}</div>`:""}
+    </div>
+    <div class="field"><div class="label">响应耗时</div><div class="reason">${r.latency_s}s</div></div>`;
+}
+
+async function send(){
+  const text = el("text").value.trim();
+  if (!text) return;
+  el("text").value = "";
+  el("send").disabled = true;
+  addBubble(text, "user");
+  showTyping();
+  try{
+    const res = await fetch("/api/chat", {
+      method:"POST", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({message:text, thread_id: threadId})
+    });
+    const r = await res.json();
+    threadId = r.thread_id;
+    hideTyping();
+    addBubble(r.response, "bot", r);
+    renderAnalysis(r);
+  }catch(e){
+    hideTyping();
+    addBubble("（网络或服务出错了：" + e + "）", "bot");
+  }finally{
+    el("send").disabled = false;
+    el("text").focus();
+  }
+}
+
+function resetSession(){
+  threadId = "";
+  msgs.innerHTML = "";
+  el("analysis").innerHTML = `<div class="empty">新的会话已开始。发送一条消息试试吧～</div>`;
+  greet();
+}
+
+function greet(){
+  addBubble("你好，我是小屿。最近过得怎么样？有什么想说的，我都在这儿听着，不着急。", "bot");
+}
+
+async function loadLegend(){
+  try{
+    const r = await fetch("/api/strategies"); const list = await r.json();
+    el("legend").innerHTML = list.map(s=>`<b>${s.name}</b>：${s.when}`).join("<br>");
+  }catch(e){ el("legend").textContent = "（策略图例加载失败）"; }
+}
+
+el("text").addEventListener("keydown", e=>{
+  if (e.key === "Enter" && !e.shiftKey){ e.preventDefault(); send(); }
+});
+loadLegend();
+greet();
+</script>
+</body>
+</html>
