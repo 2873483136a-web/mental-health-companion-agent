@@ -8,6 +8,11 @@
 
 面向**学生群体**的日常情绪陪伴：学生常常"表达意愿不足、难以直接说出困扰"。小屿通过共情、倾听、开放式提问等策略降低表达压力，引导用户愿意开口、持续交流；同时守住明确的安全边界，遇到危机及时转介专业帮助。
 
+展示：使用时的web页面速览#来源于两个帮助测试该智能体的同学，具体的测试反馈见/docs/dev_log.md
+<img width="1280" height="623" alt="aaba3c04e5610ad8297e807c2dbc5d57" src="https://github.com/user-attachments/assets/b5825a54-5015-440f-ba01-7155ab801005" />
+<img width="1273" height="647" alt="9efc812e375ee536524289694ebe651b" src="https://github.com/user-attachments/assets/f6b475bc-7de5-4c41-8ff0-4d0d9059dea5" />
+页面设计清新简洁，让人拥有好心情。侧栏有实时跟进的风险评估和情绪判断，以及对应的回复策略，旨在更好的帮助陪伴学生客户群体。
+
 ## 2. 核心能力（对应任务目标）
 
 | # | 任务目标 | 本项目实现 |
@@ -57,6 +62,16 @@ cp .env.example .env      # 然后填入 DEEPSEEK_API_KEY
 .venv/bin/python -m evaluation.evaluate
 ```
 
+Windows PowerShell（使用独立环境，不覆盖从 macOS 复制来的 `.venv`）：
+
+```powershell
+py -m venv .venv-windows
+.\.venv-windows\Scripts\python.exe -m pip install -r requirements.txt
+.\.venv-windows\Scripts\python.exe -m demo.demo
+# 交互式对话
+.\.venv-windows\Scripts\python.exe -m demo.demo --chat
+```
+
 ## 5. 目录结构
 
 ```
@@ -92,12 +107,18 @@ mental-health-companion-agent/
 
 ## 8. 常见问题
 
-### SSL / 证书相关报错
-#### 报错1：`CERTIFICATE_VERIFY_FAILED: unable to get local issuer certificate`
-macOS Python 缺少根证书；Windows 在公司代理、TLS拦截环境下也会出现该证书错误。
-本项目可借助 `certifi` 处理证书。当你在**会做 TLS 拦截的公司代理网络**下仍报错，在 `.env` 二选一：
+**`CERTIFICATE_VERIFY_FAILED: unable to get local issuer certificate`**
+macOS 的 Python 找不到 CA 证书。本项目已默认用 `certifi` 修复。若你在**会做 TLS 拦截的公司代理网络**下仍报错，在 `.env` 里二选一：
 ```bash
-DEEPSEEK_CA_BUNDLE=/绝对路径/根证书.pem   # 推荐：指定代理根证书
-# 或（仅本地调试，不安全，不要生产使用）
+DEEPSEEK_CA_BUNDLE=/绝对路径/公司根证书.pem   # 推荐：指定公司根证书
+# 或（仅本地调试，不安全）
 DEEPSEEK_VERIFY_SSL=false
+```
+
+**`APIConnectionError` / `WinError 10054`（连接被重置）**
+这是到 DeepSeek API 的网络连接中断，不是 LangGraph 未安装。客户端会自动重试最多 5 次；仍失败时，交互模式会显示底层网络错误。Windows 下先确认代理程序正在运行，且代理地址/端口与 `HTTP_PROXY`、`HTTPS_PROXY` 环境变量一致。若当前网络允许直连，可在 PowerShell 当前窗口临时清除代理后重试：
+```powershell
+Remove-Item Env:HTTP_PROXY, Env:HTTPS_PROXY, Env:ALL_PROXY -ErrorAction SilentlyContinue
+```
+交互模式会显示连接错误和排查提示；网络恢复后可直接重试本轮。
 
