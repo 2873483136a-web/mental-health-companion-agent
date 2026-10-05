@@ -48,6 +48,11 @@
 |--------|------|----------------|----------------|--------------------|
 | 同学A | 自由 |4 |“我不留你，有需要我一直在，欢迎回来” |不够口语化 |
 | 同学B | 学业焦虑 | 5|“我很担心你” |暂时没有 |
+补充：使用demo时的web界面截图和终端界面截图
+<img width="1273" height="647" alt="9efc812e375ee536524289694ebe651b" src="https://github.com/user-attachments/assets/c5a36f51-4b7f-4818-8d09-bd0935cd1e7a" />
+
+<img width="612" height="565" alt="fd152c777a02fca3ca48e09c54e9c5f8" src="https://github.com/user-attachments/assets/5f8ad2f4-03b5-40e4-a84c-f1ca6360008f" />
+
 
 ## 五、有效性判断与不足
 
